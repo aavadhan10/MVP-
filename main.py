@@ -6,626 +6,700 @@ from datetime import datetime, timedelta
 import random
 import time
 import json
+import uuid
 
 # Configure page
 st.set_page_config(
-    page_title="FinPlan GenAI Platform MVP Demo",
-    page_icon="🤖",
+    page_title="GenAI Dev Core MVP Demo",
+    page_icon="🛠️",
     layout="wide"
 )
 
-# Mock data for the new features
-FINANCIAL_USE_CASES = {
-    "Budget Analysis": {
-        "description": "Analyze spending patterns and provide improvement suggestions",
-        "optimal_model": "GPT-4",
-        "success_rate": 94.2,
-        "avg_cost": 0.034
-    },
-    "Investment Advice": {
-        "description": "Generate personalized investment recommendations",
-        "optimal_model": "Claude-3.5",
-        "success_rate": 91.8,
-        "avg_cost": 0.042
-    },
-    "Risk Assessment": {
-        "description": "Evaluate financial risk tolerance and profile",
-        "optimal_model": "GPT-4",
-        "success_rate": 89.6,
-        "avg_cost": 0.038
-    },
-    "Loan Recommendations": {
-        "description": "Match users with appropriate loan products",
-        "optimal_model": "Claude-3.5",
-        "success_rate": 87.3,
-        "avg_cost": 0.029
-    }
+# Mock data for the evaluation framework
+EVALUATION_METRICS = {
+    "accuracy_score": {"min": 0, "max": 100, "unit": "%", "threshold": 85},
+    "hallucination_risk": {"min": 0, "max": 100, "unit": "%", "threshold": 10},
+    "safety_score": {"min": 0, "max": 100, "unit": "%", "threshold": 90},
+    "compliance_score": {"min": 0, "max": 100, "unit": "%", "threshold": 95},
+    "response_latency": {"min": 0, "max": 5000, "unit": "ms", "threshold": 2000}
 }
 
-PROMPT_VERSIONS = {
-    "budget_analysis_v1": {
-        "prompt": "Analyze this budget and find problems.",
-        "success_rate": 67.2,
-        "status": "deprecated"
-    },
-    "budget_analysis_v2": {
-        "prompt": "Analyze the user's budget focusing on: 1) spending vs income ratio 2) category allocation vs recommended limits 3) specific improvement opportunities",
-        "success_rate": 84.7,
-        "status": "active"
-    },
-    "budget_analysis_v3": {
-        "prompt": "You are a certified financial planner. Analyze this budget data and provide specific, actionable recommendations. Consider: spending ratios, emergency fund status, and optimization opportunities. Be encouraging but realistic.",
-        "success_rate": 94.2,
-        "status": "optimized"
-    }
-}
+FINANCIAL_COMPLIANCE_RULES = [
+    {"rule": "PII_Detection", "description": "Detects SSN, account numbers, personal identifiers"},
+    {"rule": "Risk_Disclosure", "description": "Ensures investment advice includes risk warnings"},
+    {"rule": "Bias_Check", "description": "Flags discriminatory language in financial advice"},
+    {"rule": "Accuracy_Claims", "description": "Prevents unsupported accuracy/guarantee claims"},
+    {"rule": "GDPR_Compliance", "description": "Checks for proper data handling disclosures"}
+]
 
-COMPLIANCE_SCENARIOS = [
+SAMPLE_OUTPUTS = [
     {
-        "text": "This investment is guaranteed to double your money with zero risk.",
-        "issues": ["Misleading guarantee claims", "Risk misrepresentation"],
-        "context": "High-risk investment advice without proper disclaimers",
-        "suggestion": "Add risk disclaimers and remove guarantee language"
+        "id": "out_001",
+        "team": "Budget Team",
+        "model": "GPT-4",
+        "input": "Analyze my spending: rent $2000, food $600, entertainment $400",
+        "output": "Your housing costs at 50% of income are reasonable. Consider reducing entertainment spending and building an emergency fund.",
+        "timestamp": datetime.now() - timedelta(hours=2),
+        "evaluation_status": "completed"
     },
     {
-        "text": "Based on your income of $85,000, I recommend investing in growth stocks.",
-        "issues": [],
-        "context": "Appropriate advice with income context",
-        "suggestion": "Advice is compliant and well-contextualized"
+        "id": "out_002", 
+        "team": "Investment Team",
+        "model": "Claude-3.5",
+        "input": "Should I invest in cryptocurrency?",
+        "output": "Cryptocurrency can be part of a diversified portfolio, but should not exceed 5-10% of total investments due to volatility. Consider your risk tolerance and investment timeline.",
+        "timestamp": datetime.now() - timedelta(hours=1),
+        "evaluation_status": "flagged"
     },
     {
-        "text": "Young people should always choose aggressive investments since they have time.",
-        "issues": ["Age-based generalization", "Lacks individual context"],
-        "context": "Generic advice without personal risk assessment",
-        "suggestion": "Include individual risk tolerance assessment"
+        "id": "out_003",
+        "team": "Lending Team", 
+        "model": "GPT-3.5",
+        "input": "What loan amount can I qualify for with 650 credit score?",
+        "output": "With a 650 credit score, you may qualify for loans but at higher interest rates. Exact amounts depend on income, debt-to-income ratio, and lender policies.",
+        "timestamp": datetime.now() - timedelta(minutes=30),
+        "evaluation_status": "passed"
     }
 ]
 
 @st.cache_data
-def generate_optimization_data():
-    """Generate mock data showing AI optimization improvements over time"""
-    dates = [datetime.now() - timedelta(days=x) for x in range(30, 0, -1)]
+def generate_monitoring_data():
+    """Generate mock monitoring data for the dashboard"""
+    dates = [datetime.now() - timedelta(hours=x) for x in range(24, 0, -1)]
     
-    # Model routing optimization data
-    routing_data = []
-    base_accuracy = 78
-    for i, date in enumerate(dates):
-        # Simulate learning curve
-        accuracy_improvement = min(16, i * 0.6)  # Max 16% improvement
-        current_accuracy = base_accuracy + accuracy_improvement
-        
-        routing_data.append({
-            "date": date,
-            "accuracy": current_accuracy,
-            "cost_savings": min(30, i * 1.2),  # Max 30% cost savings
-            "optimal_routes": min(95, 65 + i * 1.0)  # Routing accuracy
-        })
-    
-    # Prompt optimization data
-    prompt_data = []
-    for use_case, data in FINANCIAL_USE_CASES.items():
-        for i in range(7):  # Weekly data points
-            week_date = datetime.now() - timedelta(weeks=i)
-            base_rate = data["success_rate"] - 15  # Starting point
-            improvement = min(15, (7-i) * 2.5)  # Gradual improvement
+    monitoring_data = []
+    for date in dates:
+        for team in ["Budget Team", "Investment Team", "Lending Team", "Credit Team"]:
+            requests = random.randint(20, 100)
+            failure_rate = random.uniform(0.5, 3.0)
+            avg_latency = random.uniform(800, 2500)
             
-            prompt_data.append({
-                "date": week_date,
-                "use_case": use_case,
-                "success_rate": base_rate + improvement,
-                "tests_run": random.randint(20, 100),
-                "version": f"v{3-min(2, i//2)}"  # Version progression
+            monitoring_data.append({
+                "timestamp": date,
+                "team": team,
+                "requests": requests,
+                "failure_rate": failure_rate,
+                "avg_latency": avg_latency,
+                "accuracy_score": random.uniform(85, 95),
+                "safety_score": random.uniform(88, 98),
+                "compliance_violations": random.randint(0, 5)
             })
     
-    return pd.DataFrame(routing_data), pd.DataFrame(prompt_data)
+    return pd.DataFrame(monitoring_data)
 
-def simulate_smart_routing(use_case, user_context):
-    """Simulate AI model routing decision"""
-    if use_case not in FINANCIAL_USE_CASES:
-        return "GPT-3.5", "No optimization data available"
+def evaluate_output(model_output, evaluation_type="full"):
+    """Simulate the evaluation framework"""
     
-    data = FINANCIAL_USE_CASES[use_case]
+    # Simulate evaluation processing time
+    time.sleep(1.5)
     
-    # Simulate decision factors
-    factors = {
-        "Historical Performance": f"{data['success_rate']}% success rate",
-        "Cost Efficiency": f"${data['avg_cost']:.3f} per request",
-        "User Context": "High-value customer" if "investment" in user_context.lower() else "Standard user",
-        "Model Load": "Normal" if random.random() > 0.3 else "High load - fallback considered"
+    # Mock evaluation results
+    results = {
+        "accuracy_score": random.uniform(75, 95),
+        "hallucination_risk": random.uniform(2, 15),
+        "safety_score": random.uniform(85, 98),
+        "compliance_score": random.uniform(80, 98),
+        "response_latency": random.uniform(800, 2200)
     }
     
-    return data["optimal_model"], factors
-
-def simulate_prompt_generation(description):
-    """Simulate AI-generated prompt from description"""
-    base_templates = {
-        "budget": "You are a financial advisor analyzing a user's budget. {description}. Provide specific, actionable recommendations with clear reasoning.",
-        "investment": "As an investment advisor, {description}. Consider the user's risk profile and provide personalized guidance with appropriate disclaimers.",
-        "loan": "You are a lending specialist helping users {description}. Evaluate their financial profile and recommend suitable products with clear terms.",
-        "risk": "As a risk assessment expert, {description}. Analyze all relevant factors and provide a balanced evaluation."
+    # Check for specific compliance issues in the text
+    compliance_issues = []
+    if "guaranteed" in model_output.lower() or "risk-free" in model_output.lower():
+        compliance_issues.append("Inappropriate guarantee claims detected")
+        results["compliance_score"] = 65
+    
+    if any(term in model_output.lower() for term in ["ssn", "social security", "account number"]):
+        compliance_issues.append("PII detected in output")
+        results["safety_score"] = 45
+    
+    if "always" in model_output.lower() or "never" in model_output.lower():
+        compliance_issues.append("Absolute statements may indicate bias")
+        results["compliance_score"] = min(results["compliance_score"], 75)
+    
+    # Determine overall status
+    failed_checks = []
+    for metric, value in results.items():
+        threshold = EVALUATION_METRICS[metric]["threshold"]
+        if metric in ["hallucination_risk"] and value > threshold:
+            failed_checks.append(f"{metric}: {value:.1f}% (threshold: <{threshold}%)")
+        elif metric not in ["hallucination_risk"] and value < threshold:
+            failed_checks.append(f"{metric}: {value:.1f}% (threshold: >{threshold}%)")
+    
+    overall_status = "PASSED" if not failed_checks and not compliance_issues else "FLAGGED"
+    
+    return {
+        "status": overall_status,
+        "scores": results,
+        "compliance_issues": compliance_issues,
+        "failed_checks": failed_checks,
+        "evaluation_id": str(uuid.uuid4())[:8]
     }
-    
-    # Simple keyword matching for demo
-    for key, template in base_templates.items():
-        if key in description.lower():
-            return template.format(description=description.lower())
-    
-    return f"Based on your request to '{description}', analyze the user's financial situation and provide personalized, compliant advice with clear reasoning and appropriate disclaimers."
 
 def main():
-    st.title("🧠 FinPlan GenAI Platform MVP Demo")
-    st.markdown("*AI-Native Platform: Smart Infrastructure + Intelligent Optimization*")
+    st.title("🛠️ GenAI Dev Core MVP Demo")
+    st.markdown("*Unified GenAI Evaluation, Monitoring & Compliance Platform*")
     
-    # Create tabs for the three main features
+    # Navigation tabs
     tab1, tab2, tab3, tab4 = st.tabs([
-        "🔀 AI-Optimized Gateway", 
-        "✨ Self-Improving Prompts", 
-        "🛡️ Intelligent Compliance",
-        "📊 Platform Analytics"
+        "🔍 Evaluation Framework",
+        "📊 Monitoring Dashboard", 
+        "🔧 Integration SDK",
+        "📋 Audit Logging"
     ])
     
     with tab1:
-        show_ai_gateway()
+        show_evaluation_framework()
     
     with tab2:
-        show_prompt_engine()
+        show_monitoring_dashboard()
     
     with tab3:
-        show_intelligent_compliance()
+        show_integration_sdk()
     
     with tab4:
-        show_platform_analytics()
+        show_audit_logging()
 
-def show_ai_gateway():
-    st.header("🔀 AI-Optimized Gateway")
-    st.markdown("*Intelligent model routing that learns optimal performance patterns*")
+def show_evaluation_framework():
+    st.header("🔍 Evaluation Framework")
+    st.markdown("*Accuracy scoring, safety checks, and financial compliance evaluation*")
     
-    col1, col2 = st.columns([3, 2])
+    col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("Smart Routing Demo")
+        st.subheader("Evaluate Model Output")
         
-        # Use case selection
-        use_case = st.selectbox("Financial Use Case:", list(FINANCIAL_USE_CASES.keys()))
+        # Team and model selection
+        team = st.selectbox("Team:", ["Budget Team", "Investment Team", "Lending Team", "Credit Team"])
+        model = st.selectbox("Model Used:", ["GPT-4", "Claude-3.5", "GPT-3.5", "Internal Model"])
         
-        # User context
-        user_context = st.text_area("User Context:", 
-                                   "High-income professional, age 35, moderate risk tolerance, existing investment portfolio")
+        # Input and output
+        user_input = st.text_area("Original User Input:", 
+                                 "What's the best way to invest $10,000 for retirement?")
         
-        # Request input
-        request_text = st.text_area("Request Content:", 
-                                   "Analyze my monthly spending of $4,500 and suggest optimizations")
+        model_output = st.text_area("Model Output to Evaluate:", 
+                                   "Investing $10,000 for retirement is guaranteed to make you rich if you put it all in stocks. This is completely risk-free and always works for everyone.",
+                                   height=100)
         
-        if st.button("Send Request with Smart Routing", type="primary"):
-            with st.spinner("🧠 AI analyzing optimal routing..."):
-                time.sleep(1.5)
+        evaluation_type = st.selectbox("Evaluation Type:", ["Full Evaluation", "Safety Only", "Compliance Only"])
+        
+        if st.button("🔍 Run Evaluation", type="primary"):
+            with st.spinner("Running evaluation framework..."):
+                evaluation_results = evaluate_output(model_output, evaluation_type.lower())
+            
+            # Display results
+            if evaluation_results["status"] == "PASSED":
+                st.success(f"✅ EVALUATION PASSED (ID: {evaluation_results['evaluation_id']})")
+            else:
+                st.error(f"⚠️ EVALUATION FLAGGED (ID: {evaluation_results['evaluation_id']})")
+            
+            # Show detailed scores
+            st.subheader("📊 Evaluation Scores")
+            
+            scores_data = []
+            for metric, score in evaluation_results["scores"].items():
+                threshold = EVALUATION_METRICS[metric]["threshold"]
+                unit = EVALUATION_METRICS[metric]["unit"]
                 
-                # Simulate routing decision
-                selected_model, routing_factors = simulate_smart_routing(use_case, user_context)
-                
-                st.success(f"✅ Request routed to {selected_model}")
-                
-                # Show routing decision factors
-                st.markdown("**🎯 Routing Decision Factors:**")
-                for factor, value in routing_factors.items():
-                    st.write(f"• **{factor}:** {value}")
-                
-                # Mock response
-                st.markdown("**💬 AI Response:**")
-                if "budget" in use_case.lower():
-                    response = """**Budget Analysis Results:**
-
-Your monthly spending of $4,500 shows several optimization opportunities:
-
-**Spending Breakdown Analysis:**
-- Housing costs appear to be within reasonable range
-- Food and dining: Consider meal planning to reduce by 10-15%
-- Entertainment: Current level is sustainable for your income
-
-**Specific Recommendations:**
-1. **Emergency Fund:** Prioritize building 3-6 months of expenses
-2. **Automated Savings:** Set up automatic transfer of $800/month
-3. **Category Optimization:** Reduce discretionary spending by $200/month
-
-**Next Steps:**
-- Review subscription services for cancellation opportunities
-- Consider the 50/30/20 budgeting rule for better allocation"""
+                if metric == "hallucination_risk":
+                    status = "✅ Pass" if score <= threshold else "❌ Fail"
+                    comparison = f"≤ {threshold}{unit}"
                 else:
-                    response = f"AI-generated response for {use_case} would appear here with contextual recommendations based on the user profile and request."
+                    status = "✅ Pass" if score >= threshold else "❌ Fail"
+                    comparison = f"≥ {threshold}{unit}"
                 
-                st.markdown(response)
+                scores_data.append({
+                    "Metric": metric.replace("_", " ").title(),
+                    "Score": f"{score:.1f}{unit}",
+                    "Threshold": comparison,
+                    "Status": status
+                })
+            
+            scores_df = pd.DataFrame(scores_data)
+            st.dataframe(scores_df, hide_index=True)
+            
+            # Show issues
+            if evaluation_results["compliance_issues"]:
+                st.subheader("🚨 Compliance Issues")
+                for issue in evaluation_results["compliance_issues"]:
+                    st.error(f"• {issue}")
+            
+            if evaluation_results["failed_checks"]:
+                st.subheader("⚠️ Failed Metric Checks")
+                for check in evaluation_results["failed_checks"]:
+                    st.warning(f"• {check}")
+            
+            # Recommendations
+            st.subheader("💡 Recommendations")
+            if evaluation_results["status"] == "FLAGGED":
+                st.markdown("""
+                **Suggested Improvements:**
+                - Remove guarantee language and absolute claims
+                - Add appropriate risk disclaimers
+                - Include personalized risk assessment
+                - Consider user's individual circumstances
+                """)
+            else:
+                st.markdown("✅ Output meets all evaluation criteria and compliance requirements.")
     
     with col2:
-        st.subheader("Routing Performance")
+        st.subheader("Active Compliance Rules")
         
-        # Performance metrics
-        if use_case in FINANCIAL_USE_CASES:
-            data = FINANCIAL_USE_CASES[use_case]
-            st.metric("Success Rate", f"{data['success_rate']:.1f}%", "+12.3%")
-            st.metric("Avg Cost", f"${data['avg_cost']:.3f}", "-18%")
-            st.metric("Optimal Model", data['optimal_model'])
-        
-        # Learning curve visualization
-        st.markdown("**📈 AI Learning Progress**")
-        routing_data, _ = generate_optimization_data()
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=routing_data['date'], 
-            y=routing_data['accuracy'],
-            mode='lines+markers',
-            name='Routing Accuracy',
-            line=dict(color='#1f77b4', width=3)
-        ))
-        fig.update_layout(
-            title="Model Routing Accuracy Over Time",
-            xaxis_title="Date",
-            yaxis_title="Accuracy (%)",
-            height=300
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Cost savings
-        st.metric("Cost Savings", f"{routing_data['cost_savings'].iloc[-1]:.1f}%", "+2.1%")
-
-def show_prompt_engine():
-    st.header("✨ Self-Improving Prompt Engine")
-    st.markdown("*AI-generated prompts that continuously optimize based on performance*")
-    
-    tab1, tab2, tab3 = st.tabs(["Generate New Prompt", "Prompt Evolution", "Performance Analytics"])
-    
-    with tab1:
-        st.subheader("🎯 Generate Optimized Prompt")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Describe what you need:**")
-            description = st.text_area("Natural Language Description:", 
-                                     "help users understand if they're overspending on housing")
-            
-            target_audience = st.selectbox("Target Audience:", 
-                                         ["First-time homebuyers", "Young professionals", "Families", "Retirees"])
-            
-            tone = st.selectbox("Desired Tone:", 
-                              ["Professional", "Friendly", "Educational", "Encouraging"])
-            
-            if st.button("🚀 Generate Optimized Prompt"):
-                with st.spinner("🧠 AI crafting optimal prompt..."):
-                    time.sleep(2)
-                
-                generated_prompt = simulate_prompt_generation(description)
-                
-                st.success("✅ Prompt generated and optimized!")
-                st.markdown("**Generated Prompt:**")
-                st.code(generated_prompt, language="text")
-                
-                # Show optimization details
-                st.markdown("**🎯 Optimization Applied:**")
-                st.write("• Added financial advisor persona for authority")
-                st.write("• Included disclaimer requirements for compliance")
-                st.write("• Structured output for better user experience")
-                st.write("• Incorporated tone preferences")
-        
-        with col2:
-            st.markdown("**🎲 Test Generated Prompt:**")
-            test_data = st.text_area("Sample User Data:", 
-                                    '{"monthly_income": 6500, "housing_cost": 2800, "other_expenses": 2200}')
-            
-            if st.button("Test Prompt Performance"):
-                st.info("📊 Simulating prompt performance...")
-                
-                # Mock performance results
-                performance_df = pd.DataFrame([
-                    {"Metric": "Relevance Score", "Value": "92.4%"},
-                    {"Metric": "User Satisfaction", "Value": "4.7/5.0"},
-                    {"Metric": "Compliance Check", "Value": "✅ Passed"},
-                    {"Metric": "Response Time", "Value": "1.2s"},
-                    {"Metric": "Cost", "Value": "$0.034"}
-                ])
-                st.dataframe(performance_df, hide_index=True)
-    
-    with tab2:
-        st.subheader("📈 Prompt Evolution History")
-        
-        selected_case = st.selectbox("View Evolution for:", ["Budget Analysis", "Investment Advice", "Risk Assessment"])
-        
-        # Show version progression
-        st.markdown(f"**Evolution of {selected_case} Prompts:**")
-        
-        for version, data in PROMPT_VERSIONS.items():
-            status_emoji = {"deprecated": "🔴", "active": "🟡", "optimized": "🟢"}
-            status = data["status"]
-            
-            st.markdown(f"**{version.upper()}** {status_emoji[status]} *{status}*")
-            st.code(data["prompt"])
-            st.write(f"Success Rate: {data['success_rate']:.1f}%")
+        st.markdown("**Financial Compliance Checks:**")
+        for rule in FINANCIAL_COMPLIANCE_RULES:
+            st.markdown(f"**{rule['rule']}**")
+            st.caption(rule['description'])
             st.markdown("---")
-    
-    with tab3:
-        st.subheader("📊 Prompt Performance Analytics")
         
-        # Generate and display prompt performance data
-        _, prompt_data = generate_optimization_data()
+        # Evaluation metrics reference
+        st.subheader("Evaluation Thresholds")
         
-        # Performance by use case
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            latest_performance = prompt_data.groupby('use_case')['success_rate'].last().reset_index()
-            fig = px.bar(latest_performance, x='use_case', y='success_rate',
-                        title="Current Success Rates by Use Case")
-            fig.update_layout(xaxis_title="Use Case", yaxis_title="Success Rate (%)")
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            # Improvement over time
-            budget_data = prompt_data[prompt_data['use_case'] == 'Budget Analysis']
-            fig = px.line(budget_data, x='date', y='success_rate',
-                         title="Budget Analysis Prompt Improvement")
-            fig.update_layout(xaxis_title="Date", yaxis_title="Success Rate (%)")
-            st.plotly_chart(fig, use_container_width=True)
-
-def show_intelligent_compliance():
-    st.header("🛡️ Intelligent Compliance Guardian")
-    st.markdown("*Context-aware compliance that understands financial advice nuances*")
-    
-    tab1, tab2, tab3 = st.tabs(["Live Compliance Check", "Compliance Learning", "Audit Dashboard"])
-    
-    with tab1:
-        st.subheader("🔍 Context-Aware Compliance Analysis")
-        
-        col1, col2 = st.columns([3, 2])
-        
-        with col1:
-            # Input for compliance checking
-            advice_text = st.text_area("Financial Advice to Check:", 
-                                     "Based on your age and income, you should put all your money in cryptocurrency since you're young and can recover from losses.",
-                                     height=100)
-            
-            user_profile = st.text_area("User Context:", 
-                                      '{"age": 25, "income": 45000, "risk_tolerance": "moderate", "investment_experience": "beginner"}',
-                                      height=80)
-            
-            advice_type = st.selectbox("Advice Category:", 
-                                     ["Investment Recommendation", "Budget Advice", "Loan Guidance", "Risk Assessment"])
-            
-            if st.button("🔍 Run Intelligent Compliance Check", type="primary"):
-                with st.spinner("🧠 AI analyzing compliance and context..."):
-                    time.sleep(2)
-                
-                # Simulate intelligent compliance analysis
-                st.markdown("**🚨 Compliance Analysis Results:**")
-                
-                # Risk assessment
-                st.error("**HIGH RISK DETECTED**")
-                
-                issues_found = [
-                    "Inappropriate risk recommendation for user profile",
-                    "Lack of diversification advice",
-                    "Missing risk disclaimers",
-                    "Age-based stereotyping in investment advice"
-                ]
-                
-                st.markdown("**Issues Identified:**")
-                for issue in issues_found:
-                    st.write(f"🔴 {issue}")
-                
-                # Context-aware suggestions
-                st.markdown("**💡 Intelligent Suggestions:**")
-                suggestions = [
-                    "Consider user's 'moderate' risk tolerance instead of assuming high risk appetite",
-                    "Recommend diversified portfolio appropriate for beginner investor",
-                    "Add standard investment risk disclaimers",
-                    "Provide education about cryptocurrency risks before any allocation recommendation"
-                ]
-                
-                for suggestion in suggestions:
-                    st.write(f"✅ {suggestion}")
-                
-                # Improved version
-                st.markdown("**📝 Suggested Compliant Version:**")
-                improved_text = """Based on your moderate risk tolerance and beginner investment experience, I recommend starting with a diversified portfolio including low-cost index funds. While cryptocurrency can be part of a portfolio, it should typically represent no more than 5-10% of total investments due to high volatility. 
-
-Consider beginning with:
-- 60% stock index funds
-- 30% bond index funds  
-- 10% alternative investments (which could include some cryptocurrency)
-
-*Disclaimer: All investments carry risk of loss. Past performance does not guarantee future results. Consider consulting with a financial advisor for personalized advice.*"""
-                
-                st.success("**Improved Compliant Advice:**")
-                st.write(improved_text)
-        
-        with col2:
-            st.subheader("Compliance Score")
-            
-            # Mock compliance scoring
-            st.metric("Overall Score", "23/100", "🔴 High Risk")
-            st.metric("Risk Assessment", "12/25", "Poor")
-            st.metric("Regulatory Compliance", "8/25", "Poor") 
-            st.metric("Context Appropriateness", "3/25", "Poor")
-            st.metric("Disclaimer Coverage", "0/25", "Missing")
-            
-            st.markdown("**🎯 Compliance Factors:**")
-            factors_df = pd.DataFrame([
-                {"Factor": "User Risk Match", "Score": "Low", "Weight": "25%"},
-                {"Factor": "Age Appropriateness", "Score": "Low", "Weight": "20%"},
-                {"Factor": "Experience Level", "Score": "Low", "Weight": "20%"},
-                {"Factor": "Diversification", "Score": "Low", "Weight": "15%"},
-                {"Factor": "Disclaimers", "Score": "Missing", "Weight": "20%"}
-            ])
-            st.dataframe(factors_df, hide_index=True)
-    
-    with tab2:
-        st.subheader("🧠 Compliance Learning System")
-        
-        st.markdown("**Review and Improve Detection:**")
-        
-        # Show example scenarios for training
-        scenario_idx = st.selectbox("Review Compliance Scenario:", range(len(COMPLIANCE_SCENARIOS)))
-        scenario = COMPLIANCE_SCENARIOS[scenario_idx]
-        
-        st.markdown("**Financial Advice:**")
-        st.code(scenario["text"])
-        
-        st.markdown("**AI Assessment:**")
-        if scenario["issues"]:
-            st.error(f"Issues Detected: {', '.join(scenario['issues'])}")
-        else:
-            st.success("No compliance issues detected")
-        
-        st.markdown(f"**Context Understanding:** {scenario['context']}")
-        st.markdown(f"**AI Suggestion:** {scenario['suggestion']}")
-        
-        # Feedback mechanism
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("✅ Correct Assessment"):
-                st.success("Thank you! AI learning updated.")
-        with col2:
-            if st.button("❌ Incorrect Assessment"):
-                st.warning("Feedback recorded for AI improvement.")
-        with col3:
-            if st.button("🔄 Partially Correct"):
-                st.info("Nuanced feedback saved for training.")
-    
-    with tab3:
-        st.subheader("📊 Compliance Audit Dashboard")
-        
-        # Compliance metrics over time
-        dates = [datetime.now() - timedelta(days=x) for x in range(30, 0, -1)]
-        compliance_data = []
-        
-        for date in dates:
-            compliance_data.append({
-                "date": date,
-                "requests_scanned": random.randint(800, 1200),
-                "issues_detected": random.randint(15, 45),
-                "high_risk_blocked": random.randint(2, 8),
-                "accuracy_score": random.uniform(92, 98)
+        thresholds_data = []
+        for metric, config in EVALUATION_METRICS.items():
+            thresholds_data.append({
+                "Metric": metric.replace("_", " ").title(),
+                "Threshold": f"{config['threshold']}{config['unit']}",
+                "Type": "Maximum" if metric == "hallucination_risk" or metric == "response_latency" else "Minimum"
             })
         
-        compliance_df = pd.DataFrame(compliance_data)
-        
-        # Summary metrics
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Requests Scanned Today", "1,147", "+23")
-        col2.metric("Issues Detected", "28", "-5")
-        col3.metric("High-Risk Blocked", "6", "+2")
-        col4.metric("Detection Accuracy", "96.2%", "+1.1%")
-        
-        # Trend charts
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            fig = px.line(compliance_df, x='date', y='accuracy_score',
-                         title="Compliance Detection Accuracy Trend")
-            fig.update_layout(yaxis_title="Accuracy (%)", xaxis_title="Date")
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            fig = px.line(compliance_df, x='date', y='issues_detected',
-                         title="Daily Compliance Issues Detected")
-            fig.update_layout(yaxis_title="Issues Count", xaxis_title="Date")
-            st.plotly_chart(fig, use_container_width=True)
+        thresholds_df = pd.DataFrame(thresholds_data)
+        st.dataframe(thresholds_df, hide_index=True)
 
-def show_platform_analytics():
-    st.header("📊 Platform Analytics")
-    st.markdown("*Comprehensive view of AI optimization and platform performance*")
+def show_monitoring_dashboard():
+    st.header("📊 Monitoring Dashboard")
+    st.markdown("*Real-time monitoring of latency, failure rates, and model drift*")
     
-    # Generate comprehensive analytics data
-    routing_data, prompt_data = generate_optimization_data()
+    # Generate monitoring data
+    monitoring_df = generate_monitoring_data()
     
-    # Overall platform metrics
+    # Key metrics
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Active Teams", "6", "+2")
-    col2.metric("AI Performance Gain", "+18.3%", "+2.1%")
-    col3.metric("Cost Optimization", "24.7%", "+1.8%")
-    col4.metric("Developer Satisfaction", "4.6/5.0", "+0.3")
     
-    # Detailed analytics tabs
-    tab1, tab2, tab3 = st.tabs(["🔀 Routing Intelligence", "✨ Prompt Evolution", "🛡️ Compliance Trends"])
+    latest_data = monitoring_df.groupby('team').last().reset_index()
+    total_requests = latest_data['requests'].sum()
+    avg_failure_rate = latest_data['failure_rate'].mean()
+    avg_latency = latest_data['avg_latency'].mean()
+    total_violations = latest_data['compliance_violations'].sum()
+    
+    col1.metric("Total Requests (Last Hour)", f"{total_requests:,}", "+12%")
+    col2.metric("Avg Failure Rate", f"{avg_failure_rate:.1f}%", "-0.3%")
+    col3.metric("Avg Latency", f"{avg_latency:.0f}ms", "+15ms")
+    col4.metric("Compliance Violations", total_violations, "-2")
+    
+    # Charts
+    st.subheader("Performance Trends (Last 24 Hours)")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Latency over time
+        hourly_latency = monitoring_df.groupby('timestamp')['avg_latency'].mean().reset_index()
+        fig = px.line(hourly_latency, x='timestamp', y='avg_latency',
+                     title="Average Response Latency")
+        fig.add_hline(y=2000, line_dash="dash", line_color="red", 
+                     annotation_text="SLA: 2000ms")
+        fig.update_layout(xaxis_title="Time", yaxis_title="Latency (ms)")
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Failure rate by team
+        team_failures = monitoring_df.groupby('team')['failure_rate'].mean().reset_index()
+        fig = px.bar(team_failures, x='team', y='failure_rate',
+                    title="Average Failure Rate by Team")
+        fig.update_layout(xaxis_title="Team", yaxis_title="Failure Rate (%)")
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Model drift detection
+    st.subheader("Model Performance Monitoring")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Accuracy scores over time
+        hourly_accuracy = monitoring_df.groupby('timestamp')['accuracy_score'].mean().reset_index()
+        fig = px.line(hourly_accuracy, x='timestamp', y='accuracy_score',
+                     title="Model Accuracy Trend")
+        fig.add_hline(y=85, line_dash="dash", line_color="red", 
+                     annotation_text="Threshold: 85%")
+        fig.update_layout(xaxis_title="Time", yaxis_title="Accuracy Score (%)")
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Safety scores
+        hourly_safety = monitoring_df.groupby('timestamp')['safety_score'].mean().reset_index()
+        fig = px.line(hourly_safety, x='timestamp', y='safety_score',
+                     title="Safety Score Trend")
+        fig.add_hline(y=90, line_dash="dash", line_color="red", 
+                     annotation_text="Threshold: 90%")
+        fig.update_layout(xaxis_title="Time", yaxis_title="Safety Score (%)")
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Alerts section
+    st.subheader("🚨 Active Alerts")
+    
+    alerts_data = [
+        {"Alert": "High Latency", "Team": "Investment Team", "Severity": "Warning", "Duration": "15 min"},
+        {"Alert": "Compliance Violations", "Team": "Lending Team", "Severity": "Critical", "Duration": "5 min"},
+        {"Alert": "Model Drift Detected", "Team": "Budget Team", "Severity": "Info", "Duration": "1 hour"}
+    ]
+    
+    alerts_df = pd.DataFrame(alerts_data)
+    
+    # Color code severity
+    def color_severity(val):
+        if val == "Critical":
+            return "background-color: #ffebee"
+        elif val == "Warning":
+            return "background-color: #fff3e0" 
+        else:
+            return "background-color: #e8f5e8"
+    
+    st.dataframe(alerts_df.style.applymap(color_severity, subset=['Severity']), hide_index=True)
+
+def show_integration_sdk():
+    st.header("🔧 Integration SDK")
+    st.markdown("*Simple API and CLI tools for sending model outputs for evaluation*")
+    
+    tab1, tab2, tab3 = st.tabs(["Python SDK", "REST API", "CLI Tool"])
     
     with tab1:
-        st.subheader("AI Model Routing Analytics")
+        st.subheader("Python SDK Integration")
         
-        col1, col2 = st.columns(2)
+        # Installation
+        st.markdown("**Installation:**")
+        st.code("pip install genai-dev-core", language="bash")
         
-        with col1:
-            # Routing accuracy over time
-            fig = px.line(routing_data, x='date', y='accuracy',
-                         title="Model Routing Accuracy Improvement")
-            fig.add_hline(y=85, line_dash="dash", line_color="red", 
-                         annotation_text="Target: 85%")
-            fig.update_layout(yaxis_title="Accuracy (%)", xaxis_title="Date")
-            st.plotly_chart(fig, use_container_width=True)
+        # Basic usage
+        st.markdown("**Basic Usage:**")
+        st.code("""
+from genai_dev_core import EvaluationClient
+
+# Initialize client
+client = EvaluationClient(
+    api_key="your_api_key",
+    team="budget_team"
+)
+
+# Evaluate model output
+result = client.evaluate(
+    model_output="Your budget shows 65% going to housing, which exceeds recommended limits.",
+    user_input="Analyze my monthly spending breakdown",
+    model_name="gpt-4",
+    evaluation_type="full"  # or "safety_only", "compliance_only"
+)
+
+# Check results
+if result.status == "passed":
+    print("✅ Output approved for production")
+    print(f"Accuracy: {result.scores.accuracy_score}%")
+else:
+    print("⚠️ Issues detected:")
+    for issue in result.compliance_issues:
+        print(f"  - {issue}")
+        """, language="python")
         
-        with col2:
-            # Cost savings progression
-            fig = px.line(routing_data, x='date', y='cost_savings',
-                         title="Cumulative Cost Savings")
-            fig.update_layout(yaxis_title="Cost Savings (%)", xaxis_title="Date")
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # Model usage distribution
-        st.subheader("Model Usage Distribution")
-        model_usage = pd.DataFrame([
-            {"Model": "GPT-4", "Usage": 45, "Avg_Cost": 0.042, "Success_Rate": 92.1},
-            {"Model": "Claude-3.5", "Usage": 35, "Avg_Cost": 0.038, "Success_Rate": 89.7},
-            {"Model": "GPT-3.5", "Usage": 20, "Avg_Cost": 0.018, "Success_Rate": 84.3}
-        ])
-        
-        fig = px.pie(model_usage, values='Usage', names='Model',
-                    title="Model Usage by Request Volume")
-        st.plotly_chart(fig, use_container_width=True)
+        # Advanced features
+        st.markdown("**Advanced Features:**")
+        st.code("""
+# Batch evaluation
+results = client.evaluate_batch([
+    {"output": "Investment advice 1", "input": "Question 1"},
+    {"output": "Investment advice 2", "input": "Question 2"}
+])
+
+# Custom evaluation criteria
+result = client.evaluate(
+    model_output="...",
+    custom_rules=["strict_financial_compliance", "high_accuracy_mode"],
+    metadata={"feature": "portfolio_advisor", "version": "v2.1"}
+)
+
+# Monitor real-time
+client.start_monitoring(
+    callback=lambda result: handle_evaluation(result),
+    alert_on=["compliance_violations", "accuracy_drop"]
+)
+        """, language="python")
     
     with tab2:
-        st.subheader("Prompt Performance Evolution")
+        st.subheader("REST API Documentation")
         
-        # Success rate improvements by use case
-        latest_prompt_performance = prompt_data.groupby('use_case').agg({
-            'success_rate': ['first', 'last'],
-            'tests_run': 'sum'
-        }).round(1)
+        # API endpoint
+        st.markdown("**Base URL:** `https://genai-dev-core.internal.company.com/api/v1`")
         
-        latest_prompt_performance.columns = ['Initial_Rate', 'Current_Rate', 'Total_Tests']
-        latest_prompt_performance['Improvement'] = (
-            latest_prompt_performance['Current_Rate'] - latest_prompt_performance['Initial_Rate']
-        ).round(1)
-        latest_prompt_performance = latest_prompt_performance.reset_index()
+        # Authentication
+        st.markdown("**Authentication:**")
+        st.code("""
+curl -H "Authorization: Bearer YOUR_API_KEY" \\
+     -H "Content-Type: application/json"
+        """, language="bash")
         
-        st.dataframe(latest_prompt_performance, hide_index=True)
+        # Evaluation endpoint
+        st.markdown("**POST /evaluate**")
+        st.code("""
+{
+  "team": "budget_team",
+  "model_name": "gpt-4",
+  "user_input": "How should I budget $5000 monthly income?",
+  "model_output": "Allocate 50% to needs, 30% to wants, 20% to savings and debt repayment.",
+  "evaluation_type": "full",
+  "metadata": {
+    "feature": "budget_advisor",
+    "version": "v1.2"
+  }
+}
+        """, language="json")
         
-        # Prompt testing volume over time
-        weekly_tests = prompt_data.groupby('date')['tests_run'].sum().reset_index()
-        fig = px.bar(weekly_tests, x='date', y='tests_run',
-                    title="Weekly Prompt A/B Tests Conducted")
-        fig.update_layout(xaxis_title="Date", yaxis_title="Tests Conducted")
-        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("**Response:**")
+        st.code("""
+{
+  "evaluation_id": "eval_abc123",
+  "status": "passed",
+  "scores": {
+    "accuracy_score": 92.3,
+    "safety_score": 96.1,
+    "compliance_score": 94.8,
+    "hallucination_risk": 3.2,
+    "response_latency": 1250
+  },
+  "compliance_issues": [],
+  "failed_checks": [],
+  "timestamp": "2025-08-08T15:30:00Z"
+}
+        """, language="json")
+        
+        # Monitoring endpoint
+        st.markdown("**GET /monitoring/{team}**")
+        st.markdown("Returns real-time monitoring data for the specified team.")
+        
+        # Batch endpoint
+        st.markdown("**POST /evaluate/batch**")
+        st.markdown("Evaluate multiple outputs in a single request (up to 100 items).")
     
     with tab3:
-        st.subheader("Compliance Intelligence Trends")
+        st.subheader("CLI Tool")
         
-        # Mock compliance trend data
-        compliance_trends = pd.DataFrame([
-            {"Week": f"Week {i}", "Detection_Accuracy": 88 + i*1.2, "False_Positives": max(12 - i*0.8, 3)} 
-            for i in range(8)
-        ])
+        # Installation
+        st.markdown("**Installation:**")
+        st.code("npm install -g @company/genai-dev-core-cli", language="bash")
         
-        col1, col2 = st.columns(2)
+        # Setup
+        st.markdown("**Initial Setup:**")
+        st.code("""
+# Configure authentication
+genai-core config set-token YOUR_API_KEY
+genai-core config set-team budget_team
+
+# Verify connection
+genai-core status
+        """, language="bash")
         
-        with col1:
-            fig = px.line(compliance_trends, x='Week', y='Detection_Accuracy',
-                         title="Compliance Detection Accuracy Improvement")
-            fig.update_layout(yaxis_title="Accuracy (%)")
-            st.plotly_chart(fig, use_container_width=True)
+        # Basic commands
+        st.markdown("**Basic Commands:**")
+        st.code("""
+# Evaluate single output
+genai-core evaluate \\
+  --input "What's the best savings account?" \\
+  --output "High-yield savings accounts typically offer 4-5% APY" \\
+  --model gpt-4
+
+# Evaluate from file
+genai-core evaluate --file model_outputs.json
+
+# Monitor team performance
+genai-core monitor --team budget_team --realtime
+
+# Get evaluation history
+genai-core history --last 24h --format table
+        """, language="bash")
         
-        with col2:
-            fig = px.line(compliance_trends, x='Week', y='False_Positives',
-                         title="False Positive Rate Reduction")
-            fig.update_layout(yaxis_title="False Positives (%)")
-            st.plotly_chart(fig, use_container_width=True)
+        # Integration with CI/CD
+        st.markdown("**CI/CD Integration:**")
+        st.code("""
+# In your deployment pipeline
+- name: Evaluate Model Outputs
+  run: |
+    genai-core evaluate --file test_outputs.json --fail-on-violations
+    if [ $? -eq 0 ]; then
+      echo "✅ All evaluations passed"
+    else
+      echo "❌ Evaluation failures detected"
+      exit 1
+    fi
+        """, language="yaml")
+    
+    # Interactive demo
+    st.subheader("🧪 Try the SDK")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Test API Call:**")
+        demo_team = st.selectbox("Team:", ["Budget Team", "Investment Team", "Lending Team"])
+        demo_model = st.selectbox("Model:", ["GPT-4", "Claude-3.5", "GPT-3.5"])
+        demo_input = st.text_area("User Input:", "Should I refinance my mortgage?")
+        demo_output = st.text_area("Model Output:", "Refinancing could save you money if rates have dropped since your original loan.")
+        
+        if st.button("🚀 Test Evaluation API"):
+            with st.spinner("Calling evaluation API..."):
+                time.sleep(1)
+            
+            st.success("✅ API call successful!")
+            st.code(f"""
+Response:
+{{
+  "evaluation_id": "eval_{random.randint(100000, 999999)}",
+  "status": "passed",
+  "scores": {{
+    "accuracy_score": {random.uniform(85, 95):.1f},
+    "safety_score": {random.uniform(90, 98):.1f},
+    "compliance_score": {random.uniform(88, 96):.1f}
+  }},
+  "processing_time": "{random.randint(800, 1500)}ms"
+}}
+            """, language="json")
+    
+    with col2:
+        st.markdown("**Generated SDK Code:**")
+        generated_code = f"""
+from genai_dev_core import EvaluationClient
+
+client = EvaluationClient(team="{demo_team.lower().replace(' ', '_')}")
+
+result = client.evaluate(
+    model_output="{demo_output[:50]}...",
+    user_input="{demo_input[:30]}...",
+    model_name="{demo_model.lower()}"
+)
+
+print(f"Status: {{result.status}}")
+print(f"Accuracy: {{result.scores.accuracy_score}}%")
+        """
+        st.code(generated_code, language="python")
+
+def show_audit_logging():
+    st.header("📋 Audit Logging")
+    st.markdown("*Comprehensive logging of evaluations and decisions for compliance review*")
+    
+    # Search and filter controls
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        date_filter = st.date_input("Date Range Start:", datetime.now().date() - timedelta(days=7))
+    with col2:
+        team_filter = st.selectbox("Filter by Team:", ["All Teams", "Budget Team", "Investment Team", "Lending Team"])
+    with col3:
+        status_filter = st.selectbox("Filter by Status:", ["All", "Passed", "Flagged", "Failed"])
+    with col4:
+        model_filter = st.selectbox("Filter by Model:", ["All Models", "GPT-4", "Claude-3.5", "GPT-3.5"])
+    
+    # Generate audit log data
+    audit_logs = []
+    for i in range(50):
+        log_entry = {
+            "evaluation_id": f"eval_{random.randint(100000, 999999)}",
+            "timestamp": datetime.now() - timedelta(hours=random.randint(0, 168)),
+            "team": random.choice(["Budget Team", "Investment Team", "Lending Team", "Credit Team"]),
+            "model": random.choice(["GPT-4", "Claude-3.5", "GPT-3.5"]),
+            "status": random.choice(["Passed", "Flagged", "Failed"]),
+            "accuracy_score": random.uniform(70, 98),
+            "compliance_score": random.uniform(75, 99),
+            "issues_count": random.randint(0, 3),
+            "user_input": f"Sample user input {i+1}...",
+            "model_output": f"Sample model output {i+1}...",
+        }
+        audit_logs.append(log_entry)
+    
+    audit_df = pd.DataFrame(audit_logs)
+    
+    # Apply filters
+    if team_filter != "All Teams":
+        audit_df = audit_df[audit_df['team'] == team_filter]
+    if status_filter != "All":
+        audit_df = audit_df[audit_df['status'] == status_filter]
+    if model_filter != "All Models":
+        audit_df = audit_df[audit_df['model'] == model_filter]
+    
+    # Summary stats
+    st.subheader("📊 Audit Summary")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Evaluations", len(audit_df))
+    col2.metric("Pass Rate", f"{(audit_df['status'] == 'Passed').mean() * 100:.1f}%")
+    col3.metric("Avg Accuracy", f"{audit_df['accuracy_score'].mean():.1f}%")
+    col4.metric("Compliance Issues", audit_df['issues_count'].sum())
+    
+    # Detailed logs table
+    st.subheader("🔍 Detailed Audit Logs")
+    
+    # Select columns to display
+    display_columns = st.multiselect(
+        "Select columns to display:",
+        ["evaluation_id", "timestamp", "team", "model", "status", "accuracy_score", "compliance_score", "issues_count"],
+        default=["evaluation_id", "timestamp", "team", "status", "accuracy_score", "compliance_score"]
+    )
+    
+    if display_columns:
+        # Format timestamp for display
+        display_df = audit_df[display_columns].copy()
+        if 'timestamp' in display_columns:
+            display_df['timestamp'] = display_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M')
+        if 'accuracy_score' in display_columns:
+            display_df['accuracy_score'] = display_df['accuracy_score'].round(1)
+        if 'compliance_score' in display_columns:
+            display_df['compliance_score'] = display_df['compliance_score'].round(1)
+        
+        st.dataframe(display_df, hide_index=True, height=400)
+    
+    # Export functionality
+    st.subheader("📤 Export Audit Data")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📊 Export to CSV"):
+            st.success("✅ CSV export initiated - check your downloads")
+    
+    with col2:
+        if st.button("📋 Generate Compliance Report"):
+            st.success("✅ Compliance report generated")
+    
+    with col3:
+        if st.button("🔍 Detailed Investigation"):
+            st.info("🔍 Opening detailed investigation dashboard...")
+    
+    # Compliance violations detail
+    if status_filter == "Flagged" or status_filter == "All":
+        st.subheader("⚠️ Recent Compliance Violations")
+        
+        violations_data = [
+            {
+                "Evaluation ID": "eval_789123",
+                "Team": "Investment Team", 
+                "Issue": "Risk disclosure missing",
+                "Severity": "Medium",
+                "Timestamp": "2025-08-08 14:30",
+                "Resolved": "No"
+            },
+            {
+                "Evaluation ID": "eval_456789",
+                "Team": "Lending Team",
+                "Issue": "PII detected in output",
+                "Severity": "High", 
+                "Timestamp": "2025-08-08 13:15",
+                "Resolved": "Yes"
+            },
+            {
+                "Evaluation ID": "eval_321654",
+                "Team": "Budget Team",
+                "Issue": "Absolute guarantee claims",
+                "Severity": "Medium",
+                "Timestamp": "2025-08-08 12:45",
+                "Resolved": "No"
+            }
+        ]
+        
+        violations_df = pd.DataFrame(violations_data)
+        st.dataframe(violations_df, hide_index=True)
 
 if __name__ == "__main__":
     main()
